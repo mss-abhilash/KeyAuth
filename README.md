@@ -582,11 +582,6 @@ curl http://localhost:8000/admin/failed-attempts
 
 <br>
 
----
-
-## 📜 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
