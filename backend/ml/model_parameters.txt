@@ -1,0 +1,89 @@
+================================================================================
+KEYSTROKE DYNAMICS AUTHENTICATION - MULTI-MODEL PARAMETERS
+================================================================================
+
+MODEL ARCHITECTURE
+------------------
+Type: Multi-Model Ensemble
+Components:
+  1. One-Class SVM (anomaly detection)
+  2. Isolation Forest (tree-based anomaly detection)
+  3. DTW Similarity (Dynamic Time Warping comparison)
+
+
+STANDARDSCALER PARAMETERS (shared)
+----------------------------------
+Purpose: Normalize features to zero mean and unit variance
+Default settings (sklearn defaults):
+  - with_mean: True
+  - with_std: True
+  - copy: True
+
+
+MODEL 1: ONE-CLASS SVM
+----------------------
+  kernel:          'rbf'    # RBF kernel for non-linear decision boundary
+  nu:              0.3      # Lenient - allows 30% margin for variation
+  gamma:           'auto'   # 1/n_features - works better with small datasets
+  weight:          0.4      # Ensemble weight (highest - proven for small samples)
+
+
+MODEL 2: ISOLATION FOREST
+-------------------------
+  n_estimators:    100      # Number of trees in the forest
+  contamination:   0.1      # Expected proportion of outliers (10%)
+  max_samples:     'auto'   # Use min(256, n_samples) samples per tree
+  random_state:    42       # For reproducibility
+  weight:          0.3      # Ensemble weight
+
+
+MODEL 3: DTW SIMILARITY
+-----------------------
+  Algorithm:       Standard Dynamic Time Warping
+  Distance metric: Euclidean (element-wise absolute difference)
+  Comparison:      Against all normalized reference samples
+  Score method:    exp(-min_distance / 5.0) exponential decay
+  weight:          0.3      # Ensemble weight
+
+
+INPUT FEATURES (12 values per sample)
+-------------------------------------
+  1. mean_hold         - Average time a key is held down (ms)
+  2. std_hold          - Standard deviation of hold times (ms)
+  3. median_hold       - Median hold time (ms)
+  4. min_hold          - Minimum hold time (ms)
+  5. max_hold          - Maximum hold time (ms)
+  6. mean_flight       - Average time between key presses (ms)
+  7. std_flight        - Standard deviation of flight times (ms)
+  8. median_flight     - Median flight time (ms)
+  9. typing_speed      - Keys pressed per second
+  10. total_time       - Total typing duration (ms)
+  11. duration_per_char - Average time per character (ms)
+  12. backspace_rate   - Ratio of backspace presses to total keys
+
+
+TRAINING CONFIGURATION
+----------------------
+  Training samples:     20 (collected via interactive typing)
+  Target phrase:        "Authentication is the key to security"
+  Model storage:        backend/ml/models/user_{user_id}.pkl
+  Storage format:       Dict with 'svm', 'iforest', 'dtw_reference', 'dtw_scaler', 'raw_samples'
+  Serialization:        joblib
+
+
+ENSEMBLE DECISION
+-----------------
+  Final prediction:     Majority vote (2 out of 3 models)
+  Final confidence:     Weighted average (SVM: 40%, IForest: 30%, DTW: 30%)
+  Status "verified":    When majority predicts inlier
+  Status "suspicious":  When majority predicts outlier
+
+
+ADAPTIVE LEARNING
+-----------------
+  Trigger:              On successful verification (prediction = 1)
+  Action:               Retrain all 3 models with new sample added
+  Max samples:          50 (keeps most recent to prevent drift)
+  Latency impact:       ~0.5-1s per successful verification
+
+================================================================================

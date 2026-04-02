@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Dashboard - KeyAuth</title>
+    <link rel="stylesheet" href="cyber-style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+    <style>
+        .security-container {
+            max-width: 900px;
+        }
+        
+        .security-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .security-header h1 {
+            color: var(--accent-primary);
+            margin-bottom: 10px;
+        }
+        
+        .security-header p {
+            color: var(--text-secondary);
+        }
+        
+        .attempts-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .attempts-table th,
+        .attempts-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.2);
+        }
+        
+        .attempts-table th {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--accent-primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+        }
+        
+        .attempts-table tr:hover {
+            background: rgba(0, 212, 255, 0.05);
+        }
+        
+        .attempts-table td {
+            color: var(--text-primary);
+        }
+        
+        .badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: 500;
+        }
+        
+        .badge-attempt-1 {
+            background: rgba(255, 193, 7, 0.2);
+            color: #ffc107;
+        }
+        
+        .badge-attempt-2 {
+            background: rgba(255, 82, 82, 0.2);
+            color: #ff5252;
+        }
+        
+        .badge-image {
+            background: rgba(0, 212, 255, 0.2);
+            color: var(--accent-primary);
+            cursor: pointer;
+        }
+        
+        .badge-no-image {
+            background: rgba(128, 128, 128, 0.2);
+            color: #888;
+        }
+        
+        .confidence-bar {
+            width: 100px;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff5252, #ffc107, #4caf50);
+            border-radius: 4px;
+        }
+        
+        .no-attempts {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .no-attempts svg {
+            width: 64px;
+            height: 64px;
+            fill: var(--accent-primary);
+            opacity: 0.5;
+            margin-bottom: 15px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--text-secondary);
+        }
+        
+        .image-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .image-modal.active {
+            display: flex;
+        }
+        
+        .image-modal-content {
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+        }
+        
+        .image-modal img {
+            max-width: 100%;
+            max-height: 80vh;
+            border-radius: 8px;
+            border: 2px solid var(--accent-primary);
+        }
+        
+        .image-modal-close {
+            position: absolute;
+            top: -40px;
+            right: 0;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+        }
+        
+        .image-modal-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(0, 212, 255, 0.1);
+            border-radius: 8px;
+            color: var(--text-primary);
+        }
+        
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--accent-primary);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .attempts-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <a href="index.html" class="nav-logo">
+            <div class="nav-logo-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+                </svg>
+            </div>
+            <span class="nav-logo-text">Key<span>Auth</span></span>
+        </a>
+        
+        <ul class="nav-links" id="navLinks">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="dashboard.html">Dashboard</a></li>
+            <li><a href="security.html" class="active">Security</a></li>
+        </ul>
+        
+        <a href="#" id="navLogoutBtn" class="nav-cta" onclick="logout()">Logout</a>
+        
+        <div class="nav-toggle" id="navToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <!-- Security Dashboard Container -->
+    <div class="auth-page">
+        <div class="auth-container security-container">
+            <a href="success.html" class="back-link">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+                </svg>
+                Back
+            </a>
+            
+            <div class="security-header">
+                <h1>Security Dashboard</h1>
+                <p>Monitor failed login attempts and captured images</p>
+            </div>
+            
+            <div id="attemptsContainer">
+                <div class="loading">Loading failed attempts...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="image-modal">
+        <div class="image-modal-content">
+            <button class="image-modal-close" onclick="closeImageModal()">&times;</button>
+            <img id="modalImage" src="" alt="Captured image">
+            <div class="image-modal-info" id="modalInfo"></div>
+        </div>
+    </div>
+
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Mobile nav toggle
+        document.getElementById('navToggle').addEventListener('click', () => {
+            document.getElementById('navLinks').classList.toggle('active');
+        });
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('username');
+            localStorage.removeItem('verificationResult');
+            window.location.href = 'login.html';
+        }
+
+        // Check if logged in
+        const userId = localStorage.getItem('user_id');
+        if (!userId) {
+            window.location.href = 'login.html';
+        }
+
+        // Load failed attempts
+        async function loadFailedAttempts() {
+            const container = document.getElementById('attemptsContainer');
+            
+            try {
+                const res = await fetch('http://localhost:8000/admin/failed-attempts');
+                const attempts = await res.json();
+                
+                if (!res.ok) {
+                    container.innerHTML = '<div class="no-attempts"><p>Error loading attempts</p></div>';
+                    return;
+                }
+                
+                if (attempts.length === 0) {
+                    container.innerHTML = `
+                        <div class="no-attempts">
+                            <svg viewBox="0 0 24 24">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                            </svg>
+                            <h3>No Failed Attempts</h3>
+                            <p>No suspicious login attempts have been recorded.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                // Build table
+                let html = `
+                    <table class="attempts-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User ID</th>
+                                <th>Attempt</th>
+                                <th>Confidence</th>
+                                <th>IP Address</th>
+                                <th>Time</th>
+                                <th>Image</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                for (const attempt of attempts) {
+                    const date = new Date(attempt.created_at);
+                    const formattedDate = date.toLocaleString();
+                    const confidencePercent = Math.round(attempt.confidence * 100);
+                    
+                    html += `
+                        <tr>
+                            <td>#${attempt.id}</td>
+                            <td>${attempt.user_id}</td>
+                            <td>
+                                <span class="badge badge-attempt-${attempt.attempt_number}">
+                                    Attempt ${attempt.attempt_number}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" style="width: ${confidencePercent}%"></div>
+                                </div>
+                                <small>${confidencePercent}%</small>
+                            </td>
+                            <td>${attempt.ip_address || 'Unknown'}</td>
+                            <td>${formattedDate}</td>
+                            <td>
+                                ${attempt.has_image 
+                                    ? `<span class="badge badge-image" onclick="viewImage(${attempt.id})">View Image</span>`
+                                    : `<span class="badge badge-no-image">No Image</span>`
+                                }
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                html += '</tbody></table>';
+                container.innerHTML = html;
+                
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="no-attempts">
+                        <p>Cannot connect to server</p>
+                    </div>
+                `;
+            }
+        }
+
+        // View image in modal
+        async function viewImage(attemptId) {
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalInfo = document.getElementById('modalInfo');
+            
+            // Fetch the image page to get the image data
+            try {
+                const res = await fetch(`http://localhost:8000/admin/failed-attempts/${attemptId}/image`);
+                const html = await res.text();
+                
+                // Extract image src from HTML
+                const imgMatch = html.match(/src="([^"]+)"/);
+                if (imgMatch && imgMatch[1]) {
+                    modalImage.src = imgMatch[1];
+                }
+                
+                // Extract metadata
+                const userIdMatch = html.match(/User ID:<\/strong>\s*(\d+)/);
+                const attemptMatch = html.match(/Attempt Number:<\/strong>\s*(\d+)/);
+                const confidenceMatch = html.match(/Confidence:<\/strong>\s*([\d.]+%)/);
+                const timestampMatch = html.match(/Timestamp:<\/strong>\s*([^<]+)/);
+                
+                modalInfo.innerHTML = `
+                    <p><strong>Attempt ID:</strong> #${attemptId}</p>
+                    ${userIdMatch ? `<p><strong>User ID:</strong> ${userIdMatch[1]}</p>` : ''}
+                    ${attemptMatch ? `<p><strong>Attempt:</strong> ${attemptMatch[1]}</p>` : ''}
+                    ${confidenceMatch ? `<p><strong>Confidence:</strong> ${confidenceMatch[1]}</p>` : ''}
+                    ${timestampMatch ? `<p><strong>Time:</strong> ${timestampMatch[1]}</p>` : ''}
+                `;
+                
+                modal.classList.add('active');
+            } catch (err) {
+                alert('Failed to load image');
+            }
+        }
+
+        // Close modal
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.remove('active');
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeImageModal();
+            }
+        });
+
+        // Close modal on background click
+        document.getElementById('imageModal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                closeImageModal();
+            }
+        });
+
+        // Load attempts on page load
+        loadFailedAttempts();
+    </script>
+</body>
+</html>

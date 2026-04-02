@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Successful - KeyAuth</title>
+    <link rel="stylesheet" href="cyber-style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔐</text></svg>">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <a href="index.html" class="nav-logo">
+            <div class="nav-logo-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+                </svg>
+            </div>
+            <span class="nav-logo-text">Key<span>Auth</span></span>
+        </a>
+        
+        <ul class="nav-links" id="navLinks">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="dashboard.html">Dashboard</a></li>
+        </ul>
+        
+        <a href="#" id="navLogoutBtn" class="nav-cta" onclick="logout()">Logout</a>
+        
+        <div class="nav-toggle" id="navToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <!-- Success Container -->
+    <div class="auth-page">
+        <div class="auth-container success-container">
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                </svg>
+            </div>
+            
+            <h1>Login Successful</h1>
+            <p id="welcomeMessage" class="success-subtitle"></p>
+            
+            <div class="result-box">
+                <div class="result-item">
+                    <span class="result-label">Verification Method</span>
+                    <span class="result-value" id="verificationMethod">-</span>
+                </div>
+                <p id="verificationDetails" class="result-details"></p>
+            </div>
+            
+            <div class="button-group">
+                <button id="continueBtn" class="btn-primary btn-full">
+                    Continue to Dashboard
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/>
+                    </svg>
+                </button>
+                <button id="securityBtn" class="btn-secondary btn-full">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+                    </svg>
+                    Security Dashboard
+                </button>
+                <button id="logoutBtn" class="btn-outline btn-full">Logout</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const navbar = document.getElementById('navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Mobile nav toggle
+        document.getElementById('navToggle').addEventListener('click', () => {
+            document.getElementById('navLinks').classList.toggle('active');
+        });
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('user_id');
+            localStorage.removeItem('username');
+            localStorage.removeItem('verificationResult');
+            window.location.href = 'login.html';
+        }
+
+        // Get verification result from localStorage
+        const result = JSON.parse(localStorage.getItem('verificationResult') || '{}');
+        const userId = localStorage.getItem('user_id');
+        const username = localStorage.getItem('username');
+
+        // Display welcome message
+        document.getElementById('welcomeMessage').textContent = 
+            username ? `Welcome back, ${username}!` : 'Welcome!';
+
+        // Display verification method
+        const methodEl = document.getElementById('verificationMethod');
+        const detailsEl = document.getElementById('verificationDetails');
+
+        if (result.method === 'otp') {
+            methodEl.textContent = 'One-Time Password (OTP)';
+            methodEl.classList.add('otp-method');
+            detailsEl.innerHTML = 'You were authenticated via email OTP.';
+        } else if (result.status === 'verified') {
+            methodEl.textContent = 'Keystroke Biometrics';
+            methodEl.classList.add('biometric-method');
+            if (result.confidence) {
+                detailsEl.innerHTML = `Confidence: <strong>${Math.round(result.confidence * 100)}%</strong>`;
+            }
+        } else {
+            methodEl.textContent = 'Unknown';
+        }
+
+        // Continue button
+        document.getElementById('continueBtn').addEventListener('click', () => {
+            window.location.href = 'dashboard.html';
+        });
+
+        // Security Dashboard button
+        document.getElementById('securityBtn').addEventListener('click', () => {
+            window.location.href = 'security.html';
+        });
+
+        // Logout button
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+
+        // Redirect to login if no session
+        if (!userId) {
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>
